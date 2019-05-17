@@ -178,8 +178,8 @@ class Game {
 
   tick() {
     this.clearCanvas(this.boardColor);
-    this.drawSnake();
     this.drawFoods();
+    this.drawSnake();
     const gotFood = this.gotFood();
     if (gotFood !== null) {
       this.score = this.score + 1;
