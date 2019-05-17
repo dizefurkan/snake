@@ -21,13 +21,12 @@ class Game {
     this.marginY = 2;
     this.score = 0;
     this.snake = [];
-    this.resetGame();
     this.foodCount = 3;
     this.foods = [];
-    for (let i = 0; i < this.foodCount; i++) {
-      this.generateValidFood();
-    }
+    this.resetGame();
     this._directionCaptured = false;
+    this.canvas.width = document.body.clientWidth;
+    this.canvas.height = document.body.clientHeight;
   }
 
   captureDirection(event) {
@@ -68,9 +67,12 @@ class Game {
   resetGame() {
     this.snake = [];
     const initialPositionX = Math.floor(this.alignedWidth() / this.stepSizeX / 2) * this.stepSizeX;
-    const initialPositionY = Math.floor(this.alignedHeight() / this.stepSizeY / 2) * this.stepSizeY; 
+    const initialPositionY = Math.floor(this.alignedHeight() / this.stepSizeY / 2) * this.stepSizeY;
     this.snake.push([initialPositionX, initialPositionY]);
     this.score = 0;
+    for (let i = 0; i < this.foodCount; i++) {
+      this.generateValidFood();
+    }
   }
 
   drawStep(x, y, color) {
@@ -87,7 +89,7 @@ class Game {
   drawFoods() {
    for (let i = 0; i < this.foods.length; i++) {
       this.drawStep(this.foods[i][0], this.foods[i][1], this.foodColor);
-    } 
+    }
   }
 
   alignedWidth() {
@@ -104,19 +106,19 @@ class Game {
     if (this.direction == 0) {
       x = head[0];
       y = head[1] - this.stepSizeY;
-      if (y < 0) y = this.alignedHeight();
+      if (y < 0) y = this.alignedHeight() - this.stepSizeY;
     } else if (this.direction == 1) {
       x = head[0] + this.stepSizeX;
       y = head[1];
-      if (x > this.alignedWidth()) x = 0;
+      if (x >= this.alignedWidth()) x = 0;
     } else if (this.direction == 2) {
       x = head[0];
       y = head[1] + this.stepSizeY;
-      if (y > this.alignedHeight()) y = 0;
+      if (y >= this.alignedHeight()) y = 0;
     } else if (this.direction == 3) {
       x = head[0] - this.stepSizeX;
       y = head[1];
-      if (x < 0) x = this.alignedWidth();
+      if (x < 0) x = this.alignedWidth() - this.stepSizeX;
     }
     this.snake.push([x, y]);
     this._directionCaptured = false;
@@ -158,6 +160,11 @@ class Game {
   isFoodValid(food) {
     for (let i = 0; i < this.foods.length; i++) {
       if (this.foods[i][0] == food[0] && this.foods[i][1] == food[1]) {
+        return false;
+      }
+    }
+    for (let i = 0; i < this.snake.length; i++) {
+      if (this.snake[i][0] == food[0] && this.snake[i][1] == food[1]) {
         return false;
       }
     }
