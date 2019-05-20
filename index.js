@@ -26,6 +26,17 @@ GameStatus = Object.freeze({
   "OVER": 3,
 });
 
+FoodType = Object.freeze({
+  "NORMAL": 0,
+  "SURPRISE": 1,
+  "WALL_CLEANER": 2,
+  "SHORTENER": 3,
+  "MULTIPLIER": 4,
+  "GHOST": 5
+});
+
+var STEP_SIZE = 32;
+
 var ENTITY_MARGIN = 4;
 var FOOD_MARGIN = 4;
 var WALL_MARGIN = 4;
@@ -41,8 +52,12 @@ class Entity {
     this.direction = direction
   }
 
+  _getColor() {
+    return this.color;
+  }
+
   _drawUnit(x, y) {
-    this.scene._context.fillStyle = this.color;
+    this.scene._context.fillStyle = this._getColor();
     this.scene._context.fillRect(
       this.marginX + x, this.marginY + y,
       this.scene.stepSizeX - this.marginX, this.scene.stepSizeY - this.marginY
@@ -61,13 +76,27 @@ class Entity {
 }
 
 class Food extends Entity {
-  constructor(x, y, color='yellow', direction=Direction.NO_DIRECTION) {
-    super(x, y, color, FOOD_MARGIN, FOOD_MARGIN, direction);
+  constructor(x, y, type=FoodType.NORMAL, direction=Direction.NO_DIRECTION) {
+    super(x, y, 'yellow', FOOD_MARGIN, FOOD_MARGIN, direction);
+    this.type = type;
   }
-  special() {
-    this.scene.snake.coords.push(this.coords[0]);
+
+  effect() {
+    if(this.type == FoodType.NORMAL) {
+      this.scene.snake.coords.push(this.coords[0]);
+      this.scene.score += 1;
+    } else if (this.type == FoodType.SHORTENER) {
+      this.scene.snake.coords.shift();
+      this.scene.score += 1;
+    } else if (this.type == FoodType.WALL_CLEANER) {
+      this.scene.snake.coords.push(this.coords[0]);
+      this.scene.score += 1;
+      if (this.scene.wall.coords.length > 0) {
+        indexToPop = Math.floor(Math.random() * this.scene.wall.coords.length);
+        this.scene.wall.coords.splice(indexToPop, 1);
+      }
+    }
     console.log(this);
-    return;
   }
 }
 
@@ -78,8 +107,13 @@ class Wall extends Entity {
 }
 
 class Snake extends Entity {
-  constructor(x, y, color='red', direction=Direction.NO_DIRECTION) {
+  constructor(x, y, color='red', deadcolor='gray', direction=Direction.NO_DIRECTION) {
     super(x, y, color, SNAKE_MARGIN, SNAKE_MARGIN, direction);
+    this.deadcolor = deadcolor;
+  }
+
+  _getColor() {
+    return this.scene.status == GameStatus.OVER ? this.deadcolor : this.color;
   }
 
   update(feed=false) {
@@ -111,17 +145,19 @@ class Snake extends Entity {
 
   biteYourself() {
     let head = this.coords.last();
-    let coord;
-    do {
+
+    let coord = [head[0] + 1, head[1] + 1];
+    while (!this.scene._sameCoord(head, coord) && this.coords.length > 1) {
       coord = this.coords.shift();
       this.scene.wall.coords.push(coord);
-    } while (!this.scene._sameCoord(head, coord));
+    }
+    this.scene.wall.coords.pop();
   }
 }
 
 
 class Game {
-  constructor() {
+  constructor(stepSize=STEP_SIZE) {
     this._canvas = document.getElementById('canvas');
     this._context = this._canvas.getContext('2d');
     this._canvas.width = document.body.clientWidth;
@@ -129,14 +165,15 @@ class Game {
     document.body.addEventListener('keydown', this.captureKey.bind(this));
     this.clearCanvas();
 
-    this.stepSizeX = 64;
-    this.stepSizeY = 64;
+    this.stepSizeX = stepSize;
+    this.stepSizeY = stepSize;
 
     this.gameSpeed = 0;
     this.status = GameStatus.READY;
 
     this.score = 0;
-    this.foodCount = 3;
+    this.multiplier = 1;
+    this.foodCount = 1;
 
     this.snake = new Snake();
     this.snake.scene = this;
@@ -157,53 +194,41 @@ class Game {
     if (keyCode == Key.RESET) {
       this.resetGame();
       return;
-    }
-
-    if (this.status == GameStatus.OVER) return;
-
-    if (keyCode == Key.PAUSE) {
-      if (this.status == GameStatus.UNPAUSED) {
-        this.pauseGame();
-      } else if (this.status == GameStatus.PAUSED) {
-        this.unpauseGame();
-      }
+    } else if (this.status == GameStatus.OVER) {
+      return;
+    } else if (keyCode == Key.PAUSE) {
+      this.togglePause();
+      return;
+    } else if (this._directionCaptured) {
       return;
     }
-
-    if (this.status == GameStatus.PAUSED) return;
-    if (this._directionCaptured) return;
-
-    if (keyCode == Key.UP && this.snake.direction !== Direction.DOWN) {
-      this._directionCaptured = true;
+    if (this.status == GameStatus.PAUSED || this.status == GameStatus.OVER) {
+      return
+    } else if (keyCode == Key.UP && this.snake.direction !== Direction.DOWN) {
       this.snake.direction = Direction.UP;
     } else if (keyCode == Key.RIGHT && this.snake.direction !== Direction.LEFT) {
-      this._directionCaptured = true;
       this.snake.direction = Direction.RIGHT;
     } else if (keyCode == Key.DOWN && this.snake.direction !== Direction.UP) {
-      this._directionCaptured = true;
       this.snake.direction = Direction.DOWN;
     } else if (keyCode == Key.LEFT && this.snake.direction !== Direction.RIGHT) {
-      this._directionCaptured = true;
       this.snake.direction = Direction.LEFT;
+    }
+    this._directionCaptured = true;
+    if (this.status == GameStatus.READY) {
+      this.status = GameStatus.UNPAUSED;
     }
   }
 
-  startGame() {
-  }
-
-  unpauseGame() {
-    if (this.status == GameStatus.OVER) return;
-    this.status= GameStatus.UNPAUSED;
-    this.tick()
-  }
-
-  pauseGame() {
-    this.status = GameStatus.PAUSED;
-    clearInterval(this._interval);
-  }
-
-  endGame() {
-    clearInterval(this._interval)
+  togglePause() {
+    if (this._interval) {
+      clearInterval(this._interval);
+    }
+    if (this.status == GameStatus.PAUSED) {
+      this.status = GameStatus.UNPAUSED;
+    } else if (this.status == GameStatus.UNPAUSED) {
+      this.status = GameStatus.PAUSED
+      this._interval = setInterval(this.tick.bind(this), 1000 / this.gameSpeed);
+    }
   }
 
   resetGame() {
@@ -211,8 +236,6 @@ class Game {
     this._resetSnake();
     this._resetFoods();
     this._resetValues();
-    clearInterval(this._interval);
-    this._interval = setInterval(this.tick.bind(this), 1000 / this.gameSpeed);
     this.status = GameStatus.READY;
   }
 
@@ -270,14 +293,14 @@ class Game {
     this.foods.push(food);
   }
 
-  generateFood() {
+  generateFood(type=FoodType.NORMAL) {
     const horizontalStepCount = Math.floor(this._canvas.width / this.stepSizeX);
     const verticalStepCount = Math.floor(this._canvas.height / this.stepSizeY);
 
     const x = Math.floor(Math.random() * horizontalStepCount) * this.stepSizeX;
     const y = Math.floor(Math.random() * verticalStepCount) * this.stepSizeY;
 
-    let newFood = new Food(x, y);
+    let newFood = new Food(x, y, type);
     return newFood;
   }
 
@@ -308,13 +331,13 @@ class Game {
     let snakeHead = this.snake.coords.last()
     for (var i = this.wall.coords.length - 1; i >= 0; i--) {
       if (this._sameCoord(this.wall.coords[i], snakeHead)) {
-        this.endGame();
+        this.status = GameStatus.OVER;
         return;
       }
     }
     for (var i = this.foods.length - 1; i >= 0; i--) {
       if (this._sameCoord(this.foods[i].coords[0], snakeHead)) {
-        this.foods[i].special();
+        this.foods[i].effect();
         this.removeFood(i);
         this.generateValidFood();
         return;
@@ -322,7 +345,6 @@ class Game {
     }
     for (var i = this.snake.coords.length - 2; i >= 0; i--) {
       if (this._sameCoord(this.snake.coords[i], snakeHead)) {
-        console.log(this.snake.coords, snakeHead);
         return this.snake.biteYourself();
       }
     }
@@ -347,13 +369,12 @@ class Game {
     this.snake.draw();
 
     this.detectSnakeCrash();
-
-    this.snake.update();
     if (this.status == GameStatus.OVER) {
-      this.endGame()
+      clearInterval(this._interval);
+      this.snake.draw();
     }
+    this.snake.update();
   }
 }
 
 const snakeGame = new Game();
-window.onload = snakeGame.startGame();
