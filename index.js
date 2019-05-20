@@ -92,7 +92,7 @@ class Food extends Entity {
       this.scene.snake.coords.push(this.coords[0]);
       this.scene.score += 1;
       if (this.scene.wall.coords.length > 0) {
-        indexToPop = Math.floor(Math.random() * this.scene.wall.coords.length);
+        let indexToPop = Math.floor(Math.random() * this.scene.wall.coords.length);
         this.scene.wall.coords.splice(indexToPop, 1);
       }
     }
