@@ -84,17 +84,22 @@ class Food extends Entity {
   effect() {
     if(this.type == FoodType.NORMAL) {
       this.scene.snake.coords.push(this.coords[0]);
-      this.scene.score += 1;
+      this.scene.score += this.scene.multiplier;
     } else if (this.type == FoodType.SHORTENER) {
       this.scene.snake.coords.shift();
-      this.scene.score += 1;
+      this.scene.score += this.scene.multiplier;
     } else if (this.type == FoodType.WALL_CLEANER) {
       this.scene.snake.coords.push(this.coords[0]);
-      this.scene.score += 1;
+      this.scene.score += this.scene.multiplier;
       if (this.scene.wall.coords.length > 0) {
         let indexToPop = Math.floor(Math.random() * this.scene.wall.coords.length);
         this.scene.wall.coords.splice(indexToPop, 1);
       }
+    } else if (this.type == FoodType.SHORTENER) {
+      this.scene.snake.coords.shift();
+      this.scene.score += this.scene.multiplier;
+    } else if (this.type == FoodType.MULTIPLIER) {
+      this.scene.multiplier += 1;
     }
     console.log(this);
   }
@@ -300,7 +305,7 @@ class Game {
     const x = Math.floor(Math.random() * horizontalStepCount) * this.stepSizeX;
     const y = Math.floor(Math.random() * verticalStepCount) * this.stepSizeY;
 
-    let newFood = new Food(x, y, type);
+    let newFood = new Food(x, y, type=FoodType.WALL_CLEANER);
     return newFood;
   }
 
