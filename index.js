@@ -412,6 +412,12 @@ class Game {
     this._context.fillRect(0, 0, this._canvas.width, this._canvas.height);
   }
 
+  drawScore() {
+    this._context.fillStyle = "rgba(255, 255, 255, 0.7)";
+    this._context.font = "30px Monospace";
+    this._context.textAlign = "center";
+    this._context.fillText(this.score, canvas.width/2, canvas.height/2);
+  }
   tick() {
     this.clearCanvas(this.boardColor);
     this.drawFoods();
@@ -423,6 +429,7 @@ class Game {
       clearInterval(this._interval);
       this.snake.draw();
     }
+    this.drawScore();
     this.snake.update();
   }
 }
