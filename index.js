@@ -104,6 +104,9 @@ class Food extends Entity {
     if(this.type == FoodType.NORMAL) {
       this.scene.snake.coords.push(this.coords[0]);
       this.scene.score += this.scene.multiplier;
+    } else if (this.type == FoodType.SURPRISE) {
+      this.type = this.pickRandomFoodType();
+      this.effect();
     } else if (this.type == FoodType.SHORTENER) {
       this.scene.snake.coords.shift();
       this.scene.score += this.scene.multiplier;
@@ -127,13 +130,17 @@ class Food extends Entity {
       this.scene._resetFoods();
     } else if (this.type == FoodType.SPEED_UP) {
       this.scene.snake.coords.push(this.coords[0]);
-      this.scene.setGameSpeed(this.scene.gameSpeed + 1);
+      this.scene.setGameSpeed(this.scene.gameSpeed * 2);
       this.scene.score += this.scene.multiplier;
     } else if (this.type == FoodType.SLOW_DOWN) {
       this.scene.snake.coords.push(this.coords[0]);
-      this.scene.setGameSpeed(Math.max(this.scene.gameSpeed - 1, 1));
+      this.scene.setGameSpeed(Math.max(Math.floor(this.scene.gameSpeed / 2), 1));
       this.scene.score += this.scene.multiplier;
     }
+  }
+  static pickRandomFoodType() {
+    let foodTypeList = Object.keys(FoodType);
+    return FoodType[foodTypeList[Math.floor(Math.random() * foodTypeList.length)]];
   }
 }
 
@@ -384,8 +391,7 @@ class Game {
         this._foodTick = (this._foodTick + 1) % this._foodBeforeSpecialFood;
         let foodTypeForNewFood;
         if (this._foodTick == 0) {
-          let foodTypeList = Object.keys(FoodType);
-          foodTypeForNewFood = FoodType[foodTypeList[Math.floor(Math.random() * foodTypeList.length)]]
+          foodTypeForNewFood = Food.pickRandomFoodType();
         } else {
           foodTypeForNewFood = FoodType.NORMAL;
         }
@@ -414,10 +420,11 @@ class Game {
 
   drawScore() {
     this._context.fillStyle = "rgba(255, 255, 255, 0.7)";
-    this._context.font = "30px Monospace";
+    this._context.font = "64px Monospace";
     this._context.textAlign = "center";
     this._context.fillText(this.score, canvas.width/2, canvas.height/2);
   }
+
   tick() {
     this.clearCanvas(this.boardColor);
     this.drawFoods();
