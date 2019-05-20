@@ -3,39 +3,39 @@ Array.prototype.last = function() {
 };
 
 Direction = Object.freeze({
-  "NO_DIRECTION": 0,
-  "UP": 1,
-  "RIGHT": 2,
-  "DOWN": 3,
-  "LEFT": 4
+  NO_DIRECTION: 0,
+  UP: 1,
+  RIGHT: 2,
+  DOWN: 3,
+  LEFT: 4
 });
 
 Key = Object.freeze({
-  "UP": 38,
-  "RIGHT": 39,
-  "DOWN": 40,
-  "LEFT": 37,
-  "PAUSE": 80,
-  "RESET": 82
+  UP: 38,
+  RIGHT: 39,
+  DOWN: 40,
+  LEFT: 37,
+  PAUSE: 80,
+  RESET: 82
 });
 
 GameStatus = Object.freeze({
-  "READY": 0,
-  "PAUSED": 1,
-  "UNPAUSED": 2,
-  "OVER": 3,
+  READY: 0,
+  PAUSED: 1,
+  UNPAUSED: 2,
+  OVER: 3,
 });
 
 FoodType = Object.freeze({
-  "NORMAL": 0,
-  "SURPRISE": 1,
-  "WALL_CLEANER": 2,
-  "SHORTENER": 3,
-  "MULTIPLIER": 4,
-  "GHOST": 5,
-  "FOOD_INCREASE": 6,
-  "SPEED_UP": 7,
-  "SLOW_DOWN": 8,
+  NORMAL: 0,
+  SURPRISE: 1,
+  WALL_CLEANER: 2,
+  SHORTENER: 3,
+  MULTIPLIER: 4,
+  GHOST: 5,
+  FOOD_INCREASE: 6,
+  SPEED_UP: 7,
+  SLOW_DOWN: 8,
 });
 
 FoodColorMapping = {
@@ -52,7 +52,7 @@ FoodColorMapping = {
 
 var STEP_SIZE = 32;
 
-var ENTITY_MARGIN = 4;
+var ENTITY_MARGIN = 0;
 var FOOD_MARGIN = 4;
 var WALL_MARGIN = 4;
 var SNAKE_MARGIN = 4;
@@ -105,7 +105,7 @@ class Food extends Entity {
       this.scene.snake.coords.push(this.coords[0]);
       this.scene.score += this.scene.multiplier;
     } else if (this.type == FoodType.SURPRISE) {
-      this.type = this.pickRandomFoodType();
+      this.type = Food.pickRandomFoodType();
       this.effect();
     } else if (this.type == FoodType.SHORTENER) {
       this.scene.snake.coords.shift();
@@ -422,7 +422,7 @@ class Game {
     this._context.fillStyle = "rgba(255, 255, 255, 0.7)";
     this._context.font = "64px Monospace";
     this._context.textAlign = "center";
-    this._context.fillText(this.score, canvas.width/2, canvas.height/2);
+    this._context.fillText("Score: " + this.score, canvas.width/2, canvas.height/2);
   }
 
   tick() {
