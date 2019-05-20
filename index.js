@@ -7,7 +7,7 @@ Direction = Object.freeze({
   "UP": 1,
   "RIGHT": 2,
   "DOWN": 3,
-  "LEFT": 4,
+  "LEFT": 4
 });
 
 Key = Object.freeze({
@@ -34,6 +34,14 @@ FoodType = Object.freeze({
   "MULTIPLIER": 4,
   "GHOST": 5
 });
+
+FoodColorMapping = {
+  [FoodType.NORMAL]: 'lime',
+  [FoodType.WALL_CLEANER]: 'maroon',
+  [FoodType.SHORTENER]: 'orange',
+  [FoodType.MULTIPLIER]: 'yellow',
+  [FoodType.GHOST]: 'fuchsia'
+}
 
 var STEP_SIZE = 32;
 
@@ -77,8 +85,12 @@ class Entity {
 
 class Food extends Entity {
   constructor(x, y, type=FoodType.NORMAL, direction=Direction.NO_DIRECTION) {
-    super(x, y, 'yellow', FOOD_MARGIN, FOOD_MARGIN, direction);
+    super(x, y, null, FOOD_MARGIN, FOOD_MARGIN, direction);
     this.type = type;
+  }
+
+  _getColor() {
+    return FoodColorMapping[this.type];
   }
 
   effect() {
@@ -99,6 +111,7 @@ class Food extends Entity {
       this.scene.snake.coords.shift();
       this.scene.score += this.scene.multiplier;
     } else if (this.type == FoodType.MULTIPLIER) {
+      this.scene.snake.coords.push(this.coords[0]);
       this.scene.multiplier += 1;
     }
     console.log(this);
@@ -230,9 +243,9 @@ class Game {
     }
     if (this.status == GameStatus.PAUSED) {
       this.status = GameStatus.UNPAUSED;
-    } else if (this.status == GameStatus.UNPAUSED) {
-      this.status = GameStatus.PAUSED
       this._interval = setInterval(this.tick.bind(this), 1000 / this.gameSpeed);
+    } else if (this.status == GameStatus.UNPAUSED) {
+      this.status = GameStatus.PAUSED;
     }
   }
 
@@ -305,7 +318,7 @@ class Game {
     const x = Math.floor(Math.random() * horizontalStepCount) * this.stepSizeX;
     const y = Math.floor(Math.random() * verticalStepCount) * this.stepSizeY;
 
-    let newFood = new Food(x, y, type=FoodType.WALL_CLEANER);
+    let newFood = new Food(x, y, type=FoodType.NORMAL);
     return newFood;
   }
 
