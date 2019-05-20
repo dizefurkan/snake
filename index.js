@@ -32,15 +32,22 @@ FoodType = Object.freeze({
   "WALL_CLEANER": 2,
   "SHORTENER": 3,
   "MULTIPLIER": 4,
-  "GHOST": 5
+  "GHOST": 5,
+  "FOOD_INCREASE": 6,
+  "SPEED_UP": 7,
+  "SLOW_DOWN": 8,
 });
 
 FoodColorMapping = {
-  [FoodType.NORMAL]: 'lime',
+  [FoodType.NORMAL]: 'white',
+  [FoodType.SURPRISE]: 'hotpink',
   [FoodType.WALL_CLEANER]: 'maroon',
-  [FoodType.SHORTENER]: 'orange',
+  [FoodType.SHORTENER]: 'tomato',
   [FoodType.MULTIPLIER]: 'yellow',
-  [FoodType.GHOST]: 'fuchsia'
+  [FoodType.GHOST]: 'fuchsia',
+  [FoodType.FOOD_INCREASE]: 'aqua',
+  [FoodType.SPEED_UP]: 'navy',
+  [FoodType.SLOW_DOWN]: 'olive'
 }
 
 var STEP_SIZE = 32;
@@ -113,8 +120,20 @@ class Food extends Entity {
     } else if (this.type == FoodType.MULTIPLIER) {
       this.scene.snake.coords.push(this.coords[0]);
       this.scene.multiplier += 1;
+    } else if (this.type == FoodType.GHOST) {
+    } else if (this.type == FoodType.FOOD_INCREASE) {
+      this.scene.snake.coords.push(this.coords[0]);
+      this.scene.foodCount = Math.min(this.scene.foodCount + 1, this.scene._maxFoodCount);
+      this.scene._resetFoods();
+    } else if (this.type == FoodType.SPEED_UP) {
+      this.scene.snake.coords.push(this.coords[0]);
+      this.scene.setGameSpeed(this.scene.gameSpeed + 1);
+      this.scene.score += this.scene.multiplier;
+    } else if (this.type == FoodType.SLOW_DOWN) {
+      this.scene.snake.coords.push(this.coords[0]);
+      this.scene.setGameSpeed(Math.max(this.scene.gameSpeed - 1, 1));
+      this.scene.score += this.scene.multiplier;
     }
-    console.log(this);
   }
 }
 
@@ -203,6 +222,9 @@ class Game {
 
 
     this._initialGameSpeed = 8;
+    this._maxFoodCount = 10;
+    this._foodBeforeSpecialFood = 10
+    this._foodTick = 1;
     this.resetGame();
     this._directionCaptured = false;
   }
@@ -278,6 +300,7 @@ class Game {
 
   _resetValues() {
     this.score = 0;
+    this._foodTick = 0;
     this.status = GameStatus.READY;
     this.setGameSpeed(this._initialGameSpeed);
   }
@@ -302,12 +325,13 @@ class Game {
     return Math.floor(this._canvas.height / this.stepSizeY) * this.stepSizeY;
   }
 
-  generateValidFood() {
+  generateValidFood(type = FoodType.NORMAL) {
     let food = this.generateFood();
     while (!this.isFoodValid(food)) {
       food = this.generateFood();
     }
     food.scene = this;
+    food.type = type;
     this.foods.push(food);
   }
 
@@ -357,7 +381,15 @@ class Game {
       if (this._sameCoord(this.foods[i].coords[0], snakeHead)) {
         this.foods[i].effect();
         this.removeFood(i);
-        this.generateValidFood();
+        this._foodTick = (this._foodTick + 1) % this._foodBeforeSpecialFood;
+        let foodTypeForNewFood;
+        if (this._foodTick == 0) {
+          let foodTypeList = Object.keys(FoodType);
+          foodTypeForNewFood = FoodType[foodTypeList[Math.floor(Math.random() * foodTypeList.length)]]
+        } else {
+          foodTypeForNewFood = FoodType.NORMAL;
+        }
+        this.generateValidFood(foodTypeForNewFood);
         return;
       }
     }
