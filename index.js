@@ -50,6 +50,9 @@ FoodColorMapping = {
   [FoodType.SLOW_DOWN]: 'olive'
 }
 
+var INITIAL_GAME_SPEED = 16;
+var BOARD_COLOR = 'blue';
+
 var STEP_SIZE = 32;
 
 var ENTITY_MARGIN = 0;
@@ -91,9 +94,12 @@ class Entity {
 }
 
 class Food extends Entity {
-  constructor(x, y, type=FoodType.NORMAL, direction=Direction.NO_DIRECTION) {
-    super(x, y, null, FOOD_MARGIN, FOOD_MARGIN, direction);
+  constructor(x, y, value=1, type=FoodType.NORMAL, direction=Direction.NO_DIRECTION) {
+    super(x, y, null, direction);
     this.type = type;
+    this.value = value;
+    this.marginX = FOOD_MARGIN;
+    this.marginY = FOOD_MARGIN;
   }
 
   _getColor() {
@@ -103,23 +109,23 @@ class Food extends Entity {
   effect() {
     if(this.type == FoodType.NORMAL) {
       this.scene.snake.coords.push(this.coords[0]);
-      this.scene.score += this.scene.multiplier;
+      this.scene.score += this.value * this.scene.multiplier;
     } else if (this.type == FoodType.SURPRISE) {
       this.type = Food.pickRandomFoodType();
       this.effect();
     } else if (this.type == FoodType.SHORTENER) {
       this.scene.snake.coords.shift();
-      this.scene.score += this.scene.multiplier;
+      this.scene.score += this.value * this.scene.multiplier;
     } else if (this.type == FoodType.WALL_CLEANER) {
       this.scene.snake.coords.push(this.coords[0]);
-      this.scene.score += this.scene.multiplier;
+      this.scene.score += this.value * this.scene.multiplier;
       if (this.scene.wall.coords.length > 0) {
         let indexToPop = Math.floor(Math.random() * this.scene.wall.coords.length);
         this.scene.wall.coords.splice(indexToPop, 1);
       }
     } else if (this.type == FoodType.SHORTENER) {
       this.scene.snake.coords.shift();
-      this.scene.score += this.scene.multiplier;
+      this.scene.score += this.value * this.scene.multiplier;
     } else if (this.type == FoodType.MULTIPLIER) {
       this.scene.snake.coords.push(this.coords[0]);
       this.scene.multiplier += 1;
@@ -131,11 +137,11 @@ class Food extends Entity {
     } else if (this.type == FoodType.SPEED_UP) {
       this.scene.snake.coords.push(this.coords[0]);
       this.scene.setGameSpeed(this.scene.gameSpeed * 2);
-      this.scene.score += this.scene.multiplier;
+      this.scene.score += this.value * this.scene.multiplier;
     } else if (this.type == FoodType.SLOW_DOWN) {
       this.scene.snake.coords.push(this.coords[0]);
       this.scene.setGameSpeed(Math.max(Math.floor(this.scene.gameSpeed / 2), 1));
-      this.scene.score += this.scene.multiplier;
+      this.scene.score += this.value * this.scene.multiplier;
     }
   }
   static pickRandomFoodType() {
@@ -147,13 +153,18 @@ class Food extends Entity {
 class Wall extends Entity {
   constructor(x, y, color='black', direction=Direction.NO_DIRECTION) {
     super(x, y, color, WALL_MARGIN, WALL_MARGIN, direction);
+    this.marginX = WALL_MARGIN;
+    this.marginY = WALL_MARGIN;
   }
 }
 
 class Snake extends Entity {
   constructor(x, y, color='red', deadcolor='gray', direction=Direction.NO_DIRECTION) {
-    super(x, y, color, SNAKE_MARGIN, SNAKE_MARGIN, direction);
+    super(x, y, color, direction);
+    this.marginX = WALL_MARGIN;
+    this.marginY = WALL_MARGIN;
     this.deadcolor = deadcolor;
+    this.nextDirection = Direction.NO_DIRECTION;
   }
 
   _getColor() {
@@ -163,6 +174,7 @@ class Snake extends Entity {
   update(feed=false) {
     let x, y;
     const head = this.coords.last();
+    this.direction = this.nextDirection;
     if (this.direction == Direction.NO_DIRECTION) {
       return;
     } else if (this.direction == Direction.UP) {
@@ -183,7 +195,6 @@ class Snake extends Entity {
       if (x < 0) x = this.scene.alignedWidth() - this.scene.stepSizeX;
     }
     this.coords.push([x, y]);
-    this.scene._directionCaptured = false;
     if (!feed) this.coords.shift();
   }
 
@@ -225,15 +236,14 @@ class Game {
     this.wall = new Wall();
     this.wall.scene = this;
 
-    this.boardColor = 'blue';
+    this.boardColor = BOARD_COLOR;
 
 
-    this._initialGameSpeed = 8;
+    this._initialGameSpeed = INITIAL_GAME_SPEED;
     this._maxFoodCount = 10;
     this._foodBeforeSpecialFood = 10
     this._foodTick = 1;
     this.resetGame();
-    this._directionCaptured = false;
   }
 
   captureKey(event) {
@@ -246,21 +256,18 @@ class Game {
     } else if (keyCode == Key.PAUSE) {
       this.togglePause();
       return;
-    } else if (this._directionCaptured) {
-      return;
     }
     if (this.status == GameStatus.PAUSED || this.status == GameStatus.OVER) {
       return
     } else if (keyCode == Key.UP && this.snake.direction !== Direction.DOWN) {
-      this.snake.direction = Direction.UP;
+      this.snake.nextDirection = Direction.UP;
     } else if (keyCode == Key.RIGHT && this.snake.direction !== Direction.LEFT) {
-      this.snake.direction = Direction.RIGHT;
+      this.snake.nextDirection = Direction.RIGHT;
     } else if (keyCode == Key.DOWN && this.snake.direction !== Direction.UP) {
-      this.snake.direction = Direction.DOWN;
+      this.snake.nextDirection = Direction.DOWN;
     } else if (keyCode == Key.LEFT && this.snake.direction !== Direction.RIGHT) {
-      this.snake.direction = Direction.LEFT;
+      this.snake.nextDirection = Direction.LEFT;
     }
-    this._directionCaptured = true;
     if (this.status == GameStatus.READY) {
       this.status = GameStatus.UNPAUSED;
     }
@@ -292,6 +299,7 @@ class Game {
     const initialPositionY = Math.floor(this.alignedHeight() / this.stepSizeY / 2) * this.stepSizeY;
     this.snake.coords.push([initialPositionX, initialPositionY]);
     this.snake.direction = Direction.NO_DIRECTION;
+    this.snake.nextDirection = Direction.NO_DIRECTION;
   }
 
   _resetWall() {
@@ -324,12 +332,20 @@ class Game {
     }
   }
 
+  horizontalStepCount() {
+    return Math.floor(this._canvas.width / this.stepSizeX);
+  }
+
+  verticalStepCount() {
+    return Math.floor(this._canvas.height / this.stepSizeY);
+  }
+
   alignedWidth() {
-    return Math.floor(this._canvas.width / this.stepSizeX) * this.stepSizeX;
+    return this.horizontalStepCount() * this.stepSizeX;
   }
 
   alignedHeight() {
-    return Math.floor(this._canvas.height / this.stepSizeY) * this.stepSizeY;
+    return this.verticalStepCount() * this.stepSizeY;
   }
 
   generateValidFood(type = FoodType.NORMAL) {
@@ -343,11 +359,8 @@ class Game {
   }
 
   generateFood(type=FoodType.NORMAL) {
-    const horizontalStepCount = Math.floor(this._canvas.width / this.stepSizeX);
-    const verticalStepCount = Math.floor(this._canvas.height / this.stepSizeY);
-
-    const x = Math.floor(Math.random() * horizontalStepCount) * this.stepSizeX;
-    const y = Math.floor(Math.random() * verticalStepCount) * this.stepSizeY;
+    const x = Math.floor(Math.random() * this.horizontalStepCount()) * this.stepSizeX;
+    const y = Math.floor(Math.random() * this.verticalStepCount()) * this.stepSizeY;
 
     let newFood = new Food(x, y, type=FoodType.NORMAL);
     return newFood;
@@ -419,7 +432,7 @@ class Game {
   }
 
   drawScore() {
-    this._context.fillStyle = "rgba(255, 255, 255, 0.7)";
+    this._context.fillStyle = "rgba(255, 255, 255, 0.3)";
     this._context.font = "64px Monospace";
     this._context.textAlign = "center";
     this._context.fillText("Score: " + this.score, canvas.width/2, canvas.height/2);
