@@ -316,6 +316,7 @@ class Game {
   _resetValues() {
     this.score = 0;
     this._foodTick = 0;
+    this.foodCount = 0;
     this.status = GameStatus.READY;
     this.setGameSpeed(this._initialGameSpeed);
   }
@@ -324,6 +325,11 @@ class Game {
     this.gameSpeed = value;
     clearInterval(this._interval);
     this._interval = setInterval(this.tick.bind(this), 1000 / this.gameSpeed);
+  }
+
+  setFoodCount(value) {
+    this.foodCount = min(value, this._maxFoodCount);
+    this._resetFoods();
   }
 
   drawFoods() {
