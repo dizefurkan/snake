@@ -368,7 +368,7 @@ class Game {
     const x = Math.floor(Math.random() * this.horizontalStepCount()) * this.stepSizeX;
     const y = Math.floor(Math.random() * this.verticalStepCount()) * this.stepSizeY;
 
-    let newFood = new Food(x, y, type=FoodType.NORMAL);
+    let newFood = new Food(x, y, 1, type=FoodType.NORMAL);
     return newFood;
   }
 
