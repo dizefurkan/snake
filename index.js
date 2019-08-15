@@ -39,8 +39,8 @@ FoodType = Object.freeze({
 });
 
 FoodColorMapping = {
-  [FoodType.NORMAL]: 'white',
-  [FoodType.SURPRISE]: 'hotpink',
+  [FoodType.NORMAL]: '#FFFFFF',
+  [FoodType.SURPRISE]: '#C92464',
   [FoodType.WALL_CLEANER]: 'maroon',
   [FoodType.SHORTENER]: 'tomato',
   [FoodType.MULTIPLIER]: 'yellow',
@@ -51,8 +51,10 @@ FoodColorMapping = {
 }
 
 var INITIAL_GAME_SPEED = 16;
-var BOARD_COLOR = 'blue';
-
+var BOARD_COLOR = '#550527';
+var SNAKE_COLOR = '#FAA613'
+var SNAKE_DEAD_COLOR = 'gray';
+var WALL_COLOR = 'lightgray';
 var STEP_SIZE = 32;
 
 var ENTITY_MARGIN = 0;
@@ -151,7 +153,7 @@ class Food extends Entity {
 }
 
 class Wall extends Entity {
-  constructor(x, y, color='black', direction=Direction.NO_DIRECTION) {
+  constructor(x, y, color=WALL_COLOR, direction=Direction.NO_DIRECTION) {
     super(x, y, color, WALL_MARGIN, WALL_MARGIN, direction);
     this.marginX = WALL_MARGIN;
     this.marginY = WALL_MARGIN;
@@ -159,7 +161,7 @@ class Wall extends Entity {
 }
 
 class Snake extends Entity {
-  constructor(x, y, color='red', deadcolor='gray', direction=Direction.NO_DIRECTION) {
+  constructor(x, y, color=SNAKE_COLOR, deadcolor=SNAKE_DEAD_COLOR, direction=Direction.NO_DIRECTION) {
     super(x, y, color, direction);
     this.marginX = WALL_MARGIN;
     this.marginY = WALL_MARGIN;
@@ -316,7 +318,7 @@ class Game {
   _resetValues() {
     this.score = 0;
     this._foodTick = 0;
-    this.foodCount = 0;
+    this.foodCount = 1;
     this.status = GameStatus.READY;
     this.setGameSpeed(this._initialGameSpeed);
   }
