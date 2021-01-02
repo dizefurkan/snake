@@ -2,4 +2,4 @@
 
 Snake Game with Canvas
 
-(Snake Game Demo)[./snake-demo.jpg]
+![Snake Game Demo](snake-demo.png)
